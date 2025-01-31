@@ -5,7 +5,6 @@ import javax.swing.*;
 import javax.swing.border.EmptyBorder;
 import javax.swing.table.DefaultTableModel;
 import java.awt.event.*;
-import java.sql.*;
 
 public class ClienteIF extends JFrame {
 
@@ -18,7 +17,6 @@ public class ClienteIF extends JFrame {
     private JTable tableClientes;
     private int idSeleccionado; 
 
-    
     public static void main(String[] args) {
         EventQueue.invokeLater(new Runnable() {
             public void run() {
@@ -32,7 +30,6 @@ public class ClienteIF extends JFrame {
         });
     }
 
-    
     public ClienteIF() {
         setTitle("Gestión de Clientes");
         setDefaultCloseOperation(JFrame.DISPOSE_ON_CLOSE);
@@ -42,7 +39,6 @@ public class ClienteIF extends JFrame {
         setContentPane(contentPane);
         contentPane.setLayout(null);
 
-        
         JLabel lblNombre = new JLabel("Nombre:");
         lblNombre.setBounds(30, 20, 80, 20);
         contentPane.add(lblNombre);
@@ -79,27 +75,22 @@ public class ClienteIF extends JFrame {
         contentPane.add(textFieldEmail);
         textFieldEmail.setColumns(10);
 
-        
         JButton btnAgregarCliente = new JButton("Agregar");
         btnAgregarCliente.setBounds(332, 35, 97, 30);
         contentPane.add(btnAgregarCliente);
 
-        
         JButton btnEditarCliente = new JButton("Guardar");
         btnEditarCliente.setBounds(332, 75, 97, 30);
         contentPane.add(btnEditarCliente);
 
-        
         JButton btnEliminarCliente = new JButton("Eliminar");
         btnEliminarCliente.setBounds(437, 75, 97, 30);
         contentPane.add(btnEliminarCliente);
 
-        
         JButton btnVisualizarCliente = new JButton("Visualizar");
         btnVisualizarCliente.setBounds(437, 35, 97, 30);
         contentPane.add(btnVisualizarCliente);
 
-        
         JScrollPane scrollPane = new JScrollPane();
         scrollPane.setBounds(30, 240, 500, 115);
         contentPane.add(scrollPane);
@@ -107,7 +98,6 @@ public class ClienteIF extends JFrame {
         tableClientes = new JTable();
         scrollPane.setViewportView(tableClientes);
 
-        
         btnAgregarCliente.addActionListener(new ActionListener() {
             public void actionPerformed(ActionEvent e) {
                 String nombre = textFieldNombre.getText();
@@ -115,117 +105,65 @@ public class ClienteIF extends JFrame {
                 String telefono = textFieldTelefono.getText();
                 String email = textFieldEmail.getText();
 
-                
                 Cliente cliente = new Cliente(nombre, dni, telefono, email);
                 ClienteDAO.agregarCliente(cliente);
-                mostrarClientes();
+                ClienteDAO.mostrarClientes(tableClientes);
+            }
+        });
+        
+     
+        tableClientes.addMouseListener(new MouseAdapter() {
+            public void mouseClicked(MouseEvent e) {
+                int filaSeleccionada = tableClientes.getSelectedRow();
+                if (filaSeleccionada != -1) {
+                    idSeleccionado = Integer.parseInt(tableClientes.getValueAt(filaSeleccionada, 0).toString()); // Obtener el ID de la primera columna
+                    textFieldNombre.setText(tableClientes.getValueAt(filaSeleccionada, 1).toString());
+                    textFieldDni.setText(tableClientes.getValueAt(filaSeleccionada, 2).toString());
+                    textFieldTelefono.setText(tableClientes.getValueAt(filaSeleccionada, 3).toString());
+                    textFieldEmail.setText(tableClientes.getValueAt(filaSeleccionada, 4).toString());
+                }
             }
         });
 
-        
         btnEditarCliente.addActionListener(new ActionListener() {
             public void actionPerformed(ActionEvent e) {
-                if (idSeleccionado != -1) { 
+                if (idSeleccionado != -1) {
                     String nombre = textFieldNombre.getText();
                     String dni = textFieldDni.getText();
                     String telefono = textFieldTelefono.getText();
                     String email = textFieldEmail.getText();
+
                     Cliente cliente = new Cliente(nombre, dni, telefono, email);
                     ClienteDAO.editarCliente(idSeleccionado, cliente);
-                    mostrarClientes();
+                    ClienteDAO.mostrarClientes(tableClientes);
                 } else {
                     JOptionPane.showMessageDialog(null, "Selecciona un cliente para editar.");
                 }
             }
         });
 
-        
         btnEliminarCliente.addActionListener(new ActionListener() {
             public void actionPerformed(ActionEvent e) {
                 if (idSeleccionado != -1) {
                     ClienteDAO.eliminarCliente(idSeleccionado);
-                    mostrarClientes();
+                    ClienteDAO.mostrarClientes(tableClientes);
                 } else {
                     JOptionPane.showMessageDialog(null, "Selecciona un cliente para eliminar.");
                 }
             }
         });
 
-        
+    
         btnVisualizarCliente.addActionListener(new ActionListener() {
             public void actionPerformed(ActionEvent e) {
                 if (idSeleccionado != -1) {
-                    visualizarCliente(idSeleccionado);
+                    ClienteDAO.visualizarCliente(idSeleccionado);
                 } else {
                     JOptionPane.showMessageDialog(null, "Selecciona un cliente para visualizar.");
                 }
             }
         });
 
-        
-        mostrarClientes();
-    }
-
-    
-    private void mostrarClientes() {
-        DefaultTableModel model = new DefaultTableModel();
-        model.addColumn("ID");
-        model.addColumn("Nombre");
-        model.addColumn("DNI");
-        model.addColumn("Teléfono");
-        model.addColumn("Email");
-
-        try (Connection con = ConnectDatabase.getConnection();
-             Statement stmt = con.createStatement();
-             ResultSet rs = stmt.executeQuery("SELECT * FROM Clientes")) {
-
-            while (rs.next()) {
-                model.addRow(new Object[]{
-                    rs.getInt("id_cliente"),
-                    rs.getString("nombre"),
-                    rs.getString("dni"),
-                    rs.getString("telefono"),
-                    rs.getString("email")
-                });
-            }
-            tableClientes.setModel(model);
-
-            //listener para cuando se seleccione un cliente en la tabla
-            tableClientes.getSelectionModel().addListSelectionListener(e -> {
-                int row = tableClientes.getSelectedRow();
-                if (row != -1) {
-                    idSeleccionado = (int) tableClientes.getValueAt(row, 0);
-                    textFieldNombre.setText((String) tableClientes.getValueAt(row, 1));
-                    textFieldDni.setText((String) tableClientes.getValueAt(row, 2));
-                    textFieldTelefono.setText((String) tableClientes.getValueAt(row, 3));
-                    textFieldEmail.setText((String) tableClientes.getValueAt(row, 4));
-                }
-            });
-
-        } catch (SQLException e) {
-            e.printStackTrace();
-        }
-    }
-
-    
-    private void visualizarCliente(int id) {
-        try (Connection con = ConnectDatabase.getConnection();
-             PreparedStatement stmt = con.prepareStatement("SELECT * FROM Clientes WHERE id_cliente = ?")) {
-
-            stmt.setInt(1, id);
-            ResultSet rs = stmt.executeQuery();
-
-            if (rs.next()) {
-                JOptionPane.showMessageDialog(null,
-                        "ID: " + rs.getInt("id_cliente") +
-                                "\nNombre: " + rs.getString("nombre") +
-                                "\nDNI: " + rs.getString("dni") +
-                                "\nTeléfono: " + rs.getString("telefono") +
-                                "\nEmail: " + rs.getString("email"));
-            }
-
-        } catch (SQLException e) {
-            e.printStackTrace();
-        }
+        ClienteDAO.mostrarClientes(tableClientes);
     }
 }
